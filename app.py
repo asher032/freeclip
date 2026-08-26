@@ -30,6 +30,31 @@ import layout_ranges
 
 load_dotenv()
 
+# Ensure ffmpeg and ffprobe are on PATH for subprocess calls —
+# WinGet installs them in a user-local directory that isn't always inherited.
+import pathlib as _pl
+for _pkg_dir in [_pl.Path.home() / "AppData" / "Local" / "Microsoft" / "WinGet" / "Packages",
+                _pl.Path.home() / "scoop" / "apps" / "ffmpeg" / "current"]:
+    if _pkg_dir.is_dir():
+        for _sub in _pkg_dir.iterdir():
+            _bindir = _sub / "bin"
+            if _bindir.is_dir() and any(_bindir.glob("ffmpeg*")):
+                _p = str(_bindir)
+                if _p not in os.environ.get("PATH", ""):
+                    os.environ["PATH"] = _p + os.pathsep + os.environ.get("PATH", "")
+                    break
+            # WinGet nests ffmpeg inside a sub-subdirectory
+            for _inner in (_sub.iterdir() if _sub.is_dir() else []):
+                _bindir2 = _inner / "bin"
+                if _bindir2.is_dir() and any(_bindir2.glob("ffmpeg*")):
+                    _p = str(_bindir2)
+                    if _p not in os.environ.get("PATH", ""):
+                        os.environ["PATH"] = _p + os.pathsep + os.environ.get("PATH", "")
+                    break
+for _std_dir in ["/usr/local/bin", "/opt/homebrew/bin"]:
+    if os.path.isdir(_std_dir) and _std_dir not in os.environ.get("PATH", ""):
+        os.environ["PATH"] = _std_dir + os.pathsep + os.environ.get("PATH", "")
+
 # Constants
 UPLOAD_DIR = "uploads"
 OUTPUT_DIR = "output"
